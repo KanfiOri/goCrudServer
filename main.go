@@ -89,6 +89,44 @@ func createUser(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
+func deleteUser(db *sql.DB) gin.HandlerFunc{
+	return func(c *gin.Context) {
+		var deleteUser struct {
+			UserName string `json:"username"`
+		}
+
+		if err := c.ShouldBindJSON(&deleteUser); err != nil {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Body must contain 'username'"})
+			return
+		}
+
+		if deleteUser.UserName == "" {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Username field cannot be empty"})
+			return
+		}
+
+		// Check if the user exists before deletion
+		var count int
+		err := db.QueryRow("SELECT COUNT(*) FROM task_user WHERE name = $1", deleteUser.UserName).Scan(&count)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if count == 0 {
+			c.IndentedJSON(http.StatusNotFound, gin.H{"error": "User does not exist"})
+			return
+		}
+
+		// User exists, proceed to delete
+		_, err = db.Exec("DELETE FROM task_user WHERE name = $1", deleteUser.UserName)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		c.IndentedJSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+	}
+}
+
 func main() {
 	// PostgreSQL connection string
 	connStr := "postgres://postgres:pass123@localhost:5433/postgres?sslmode=disable"
@@ -118,13 +156,16 @@ func main() {
 	
 	// CRUD
 
-	// Accepts GET requests with a name parameter in the URL to retrieve the corresponding user.
 	getUserHandler := getUserByName(db)
 	router.GET("/user/:name", getUserHandler)
 
-	// Accepts GET requests with a name parameter in the URL to retrieve the corresponding user.
 	createUserHandler := createUser(db)
 	router.POST("/create", createUserHandler)
+
+	deleteUserhandler := deleteUser(db)
+	router.DELETE("/delete", deleteUserhandler)
+
+
 
 	router.Run("localhost:8080")
 }
