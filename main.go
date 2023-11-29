@@ -50,7 +50,6 @@ func createUser(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		// Check if the user already exists
 		var count int
 		err := db.QueryRow("SELECT COUNT(*) FROM task_user WHERE name = $1", newUser.UserName).Scan(&count)
 		if err != nil {
@@ -62,7 +61,6 @@ func createUser(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		// User does not exist, create a new user
 		_, err = db.Exec("INSERT INTO task_user (name) VALUES ($1)", newUser.UserName)
 		if err != nil {
 			log.Fatal(err)
@@ -113,7 +111,6 @@ func deleteUser(db *sql.DB) gin.HandlerFunc{
 			return
 		}
 
-		// Check if the user exists before deletion
 		var count int
 		err := db.QueryRow("SELECT COUNT(*) FROM task_user WHERE name = $1", deleteUser.UserName).Scan(&count)
 		if err != nil {
@@ -125,7 +122,6 @@ func deleteUser(db *sql.DB) gin.HandlerFunc{
 			return
 		}
 
-		// User exists, proceed to delete
 		_, err = db.Exec("DELETE FROM task_user WHERE name = $1", deleteUser.UserName)
 		if err != nil {
 			log.Fatal(err)
@@ -176,7 +172,7 @@ func updateUser(db *sql.DB) gin.HandlerFunc{
 }
 
 func main() {
-	connStr := "postgres://postgres:pass123@localhost:5433/postgres?sslmode=disable"
+	connStr := "postgres://postgres:pass123@postgres:5432/postgres?sslmode=disable"
 
 	// Open a connection to the database
 	db, err := sql.Open("postgres", connStr)

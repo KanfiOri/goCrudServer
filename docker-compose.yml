@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres
+    container_name: my_postgres
+    environment:
+      POSTGRES_PASSWORD: pass123
+    networks:
+      - my_network
+
+  your_app:
+    build: .
+    ports:
+      - "8080:8080"
+    networks:
+      - my_network
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: my_postgres
+
+networks:
+  my_network:
+    driver: bridge
