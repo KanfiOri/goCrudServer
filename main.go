@@ -19,7 +19,6 @@ func getUserByName(db *sql.DB) gin.HandlerFunc {
 		var id int
 		var dbName string
 
-		// Query to retrieve a user by name
 		err := db.QueryRow("SELECT id, name FROM task_user WHERE name = $1", name).Scan(&id, &dbName)
 		if err != nil {
 			if err == sql.ErrNoRows {
@@ -35,39 +34,6 @@ func getUserByName(db *sql.DB) gin.HandlerFunc {
 }
 
 func createUser(db *sql.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var newUser struct {
-			UserName string `json:"username"`
-		}
-
-		if err := c.ShouldBindJSON(&newUser); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Body must contain 'username'"})
-			return
-		}
-
-		if newUser.UserName == "" {
-			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Username field cannot be empty"})
-			return
-		}
-
-		var count int
-		err := db.QueryRow("SELECT COUNT(*) FROM task_user WHERE name = $1", newUser.UserName).Scan(&count)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if count > 0 {
-			c.IndentedJSON(http.StatusConflict, gin.H{"error": "User already exists"})
-			return
-		}
-
-		_, err = db.Exec("INSERT INTO task_user (name) VALUES ($1)", newUser.UserName)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		c.IndentedJSON(http.StatusCreated, gin.H{"message": "User created successfully"})
-	}
 	// return func(c *gin.Context) {
 	// 	var newUser struct {
 	// 		UserName string `json:"username"`
@@ -83,16 +49,49 @@ func createUser(db *sql.DB) gin.HandlerFunc {
 	// 		return
 	// 	}
 
-	// 	// Insert the new user into the database
-	// 	_, err := db.Exec("INSERT INTO task_user (name) VALUES ($1)", newUser.UserName)
+	// 	var count int
+	// 	err := db.QueryRow("SELECT COUNT(*) FROM task_user WHERE name = $1", newUser.UserName).Scan(&count)
 	// 	if err != nil {
-	// 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 	// 		log.Fatal(err)
+	// 	}
+
+	// 	if count > 0 {
+	// 		c.IndentedJSON(http.StatusConflict, gin.H{"error": "User already exists"})
 	// 		return
+	// 	}
+
+	// 	_, err = db.Exec("INSERT INTO task_user (name) VALUES ($1)", newUser.UserName)
+	// 	if err != nil {
+	// 		log.Fatal(err)
 	// 	}
 
 	// 	c.IndentedJSON(http.StatusCreated, gin.H{"message": "User created successfully"})
 	// }
+	return func(c *gin.Context) {
+		var newUser struct {
+			UserName string `json:"username"`
+		}
+
+		if err := c.ShouldBindJSON(&newUser); err != nil {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Body must contain 'username'"})
+			return
+		}
+
+		if newUser.UserName == "" {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Username field cannot be empty"})
+			return
+		}
+
+		// Insert the new user into the database
+		_, err := db.Exec("INSERT INTO task_user (name) VALUES ($1)", newUser.UserName)
+		if err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+			log.Fatal(err)
+			return
+		}
+
+		c.IndentedJSON(http.StatusCreated, gin.H{"message": "User created successfully"})
+	}
 }
 
 func deleteUser(db *sql.DB) gin.HandlerFunc{
